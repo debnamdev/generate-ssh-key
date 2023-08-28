@@ -1,0 +1,87 @@
+# MIT License
+#
+# Copyright (c) 2023 John B Debnam
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
+generate_ssh_key() {
+    attempts=0
+
+    while [[ $attempts -lt 2 ]]; do
+        read -p "Enter format type (RSA or ED25519): " type
+        type=$(echo "$type" | tr '[:upper:]' '[:lower:]')  # Convert to lowercase
+        if [[ "$type" == "rsa" || "$type" == "ed25519" ]]; then
+            break
+        else
+            echo "Invalid type. Please choose RSA or ED25519."
+            ((attempts++))
+            if [[ $attempts -eq 2 ]]; then
+                echo "Exiting after 2 failed attempts."
+                return 1
+            fi
+        fi
+    done
+
+    if [[ "$type" == "rsa" ]]; then
+        attempts=0
+        while [[ $attempts -lt 2 ]]; do
+            read -p "Enter number of bits (2048 or 4096): " bits
+            if [[ "$bits" == "2048" || "$bits" == "4096" ]]; then
+                break
+            else
+                echo "For RSA, you must specify 2048 or 4096 bits."
+                ((attempts++))
+                if [[ $attempts -eq 2 ]]; then
+                    echo "Exiting after 2 failed attempts."
+                    return 1
+                fi
+            fi
+        done
+    fi
+
+    read -p "Enter comment or email: " comment
+    read -p "Specify the file path to save the key (e.g., /path/to/mykey): " filepath
+
+    # Ensure the ~/.ssh directory exists
+    filepath=$(eval echo "$filepath")
+    ssh_dir="$(dirname "$filepath")"
+    if [[ ! -d "$ssh_dir" ]]; then
+        mkdir -p "$ssh_dir"
+        chmod 700 "$ssh_dir"
+    fi
+
+    # Generate the key based on type
+    if [[ "$type" == "rsa" ]]; then
+        ssh-keygen -t rsa -b $bits -C "$comment" -m PEM -f "$filepath"
+    else
+        ssh-keygen -t ed25519 -C "$comment" -m PEM -f "$filepath"
+    fi
+
+    echo "Key generation complete."
+
+    # Prompt to display the public key
+    read -p "Would you like to view the public key? (yes/no) " view_key
+    view_key=$(echo "$view_key" | tr '[:upper:]' '[:lower:]')  # Convert to lowercase
+
+    if [[ "$view_key" == "yes" || "$view_key" == "y" ]]; then
+        cat "${filepath}.pub"
+    fi
+}
+
