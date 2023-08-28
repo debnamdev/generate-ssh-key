@@ -17,7 +17,7 @@ The `generate_ssh_key` function allows users to easily generate SSH keys by prom
 1. Source the function in your shell:
 
    ```bash
-   source /path/to/script.sh
+   source /path/to/script
    ```
 
    Note: You can add the function to your `~/.bashrc` or `~/.zshrc` to make it available in every new terminal session.
